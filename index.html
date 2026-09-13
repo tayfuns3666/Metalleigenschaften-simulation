@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metalle untersuchen – Simulationen</title>
+<style>
+  :root{
+    --bg:#f4f7f9;
+    --card:#ffffff;
+    --ink:#1f2937;
+    --muted:#64748b;
+    --accent:#1f7a8c;
+    --accent2:#0f4c5c;
+    --line:#dbe4ea;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  header{
+    background:var(--accent2);
+    color:white;
+    padding:22px 18px;
+  }
+  header h1{margin:0 0 6px;font-size:28px}
+  header p{margin:0;color:#d8eef2}
+  main{
+    max-width:1050px;
+    margin:22px auto;
+    padding:0 16px 40px;
+  }
+  .intro,.sim{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:18px;
+    box-shadow:0 4px 14px rgba(0,0,0,.05);
+  }
+  .intro strong{color:var(--accent2)}
+  h2{margin-top:0;color:var(--accent2)}
+  .row{
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .controls{
+    min-width:240px;
+    flex:1;
+  }
+  .stage{
+    flex:2;
+    min-width:300px;
+    min-height:230px;
+    border:2px dashed var(--line);
+    border-radius:14px;
+    background:#fbfdfe;
+    padding:18px;
+    position:relative;
+    overflow:hidden;
+  }
+  label{display:block;margin:8px 0 5px;font-weight:bold}
+  select,button{
+    font-size:16px;
+    border-radius:10px;
+    padding:10px 12px;
+  }
+  select{
+    width:100%;
+    border:1px solid #b8c6cf;
+    background:white;
+  }
+  button{
+    border:0;
+    background:var(--accent);
+    color:white;
+    cursor:pointer;
+    margin:8px 6px 0 0;
+  }
+  button.secondary{background:#718096}
+  button:hover{filter:brightness(.95)}
+  .result{
+    margin-top:12px;
+    padding:10px 12px;
+    border-radius:10px;
+    background:#eef6f7;
+    min-height:44px;
+    font-weight:bold;
+  }
+  .timer{
+    font-size:34px;
+    font-weight:bold;
+    color:var(--accent2);
+    text-align:center;
+    margin-top:12px;
+    letter-spacing:1px;
+  }
+
+  /* Glanz */
+  .sample{
+    width:230px;
+    height:115px;
+    border-radius:14px;
+    margin:30px auto 10px;
+    border:3px solid #555;
+    transition:background .5s, box-shadow .5s, filter .5s, opacity .5s;
+  }
+
+  .sample.kupfer{
+    background:linear-gradient(135deg,#86512d,#a86b3c,#704124);
+  }
+  .sample.aluminium{
+    background:linear-gradient(135deg,#9ea4a8,#b9bec2,#8e9498);
+  }
+  .sample.eisen{
+    background:linear-gradient(135deg,#666b6f,#7b8084,#555a5e);
+  }
+  .sample.holz{
+    background:
+      repeating-linear-gradient(8deg,#9b704a 0 9px,#8a613f 9px 13px,#a47a52 13px 23px);
+  }
+  .sample.kunststoff{
+    background:#b5bac0;
+  }
+  .sample.glas{
+    background:linear-gradient(135deg,rgba(209,241,249,.42),rgba(157,214,229,.65),rgba(234,250,253,.45));
+    border-color:#8cbcc8;
+  }
+
+  /* Nach dem Polieren entsteht bei Metallen ein klarer metallischer Reflex. */
+  .sample.kupfer.shiny{
+    background:linear-gradient(120deg,#8c4f27 0%,#d49364 24%,#fff1df 43%,#b76532 59%,#f1b487 72%,#7e4323 100%);
+    box-shadow:0 0 24px rgba(255,255,255,.75);
+  }
+  .sample.aluminium.shiny{
+    background:linear-gradient(120deg,#858b90 0%,#f6f7f8 30%,#aab0b5 48%,#ffffff 63%,#858b90 100%);
+    box-shadow:0 0 24px rgba(255,255,255,.85);
+  }
+  .sample.eisen.shiny{
+    background:linear-gradient(120deg,#4f5559 0%,#c9ced2 31%,#777e83 49%,#e8ebed 63%,#4d5357 100%);
+    box-shadow:0 0 18px rgba(255,255,255,.55);
+  }
+
+  /* Nichtmetalle bleiben optisch anders: kein metallischer Reflex. */
+  .sample.holz.shiny{
+    filter:brightness(1.08);
+  }
+  .sample.kunststoff.shiny{
+    background:linear-gradient(120deg,#adb3b9 0%,#d9dde0 42%,#b3b8bd 68%,#a8adb2 100%);
+    box-shadow:0 0 7px rgba(255,255,255,.25);
+  }
+  .sample.glas.shiny{
+    background:linear-gradient(120deg,rgba(189,228,238,.42) 0%,rgba(250,255,255,.86) 38%,rgba(159,215,228,.5) 56%,rgba(241,253,255,.8) 72%,rgba(177,222,233,.45) 100%);
+    box-shadow:0 0 14px rgba(217,249,255,.55);
+  }
+
+  .caption{text-align:center;color:var(--muted)}
+
+  /* Strom */
+  .circuit{
+    height:180px;
+    position:relative;
+  }
+  .battery{
+    position:absolute;left:25px;top:65px;
+    width:58px;height:85px;border:3px solid #444;border-radius:6px;
+    background:#e6e6e6;
+  }
+  .battery:before{
+    content:"+";
+    position:absolute;top:-28px;left:19px;font-weight:bold;font-size:22px;
+  }
+  .wire{
+    position:absolute;height:5px;background:#444;top:105px;
+  }
+  .wire.w1{left:83px;width:125px}
+  .wire.w2{right:80px;width:125px}
+  .testpiece{
+    position:absolute;left:calc(50% - 65px);top:88px;
+    width:130px;height:38px;border-radius:8px;
+    background:#9ca3af;border:2px solid #555;
+    display:flex;align-items:center;justify-content:center;font-weight:bold;
+  }
+  .lamp{
+    position:absolute;right:18px;top:58px;
+    width:70px;height:70px;border-radius:50%;
+    border:4px solid #555;background:#e7e7e7;
+    transition:.3s;
+  }
+  .lamp.on{
+    background:#fff6a6;
+    box-shadow:0 0 28px 10px rgba(255,226,91,.75);
+  }
+
+  /* Wärme */
+  .bar{
+    width:85%;
+    height:46px;
+    margin:55px auto 0;
+    border-radius:10px;
+    background:#9ca3af;
+    border:2px solid #666;
+    position:relative;
+    overflow:visible;
+  }
+  .heat{
+    position:absolute;left:-30px;top:-9px;
+    font-size:50px;
+  }
+  .thermo{
+    position:absolute;right:12px;top:-46px;
+    font-size:36px;
+  }
+  .heatfront{
+    height:100%;
+    width:0%;
+    border-radius:8px;
+    background:linear-gradient(90deg,#ef8354,#ffd166);
+  }
+
+
+  .note{
+    color:var(--muted);
+    font-size:14px;
+    margin-top:12px;
+  }
+
+  .table-wrap{
+    overflow-x:auto;
+    margin-top:16px;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+  }
+  th,td{
+    border:1px solid var(--line);
+    padding:10px;
+    text-align:center;
+  }
+  th{
+    background:#eef6f7;
+    color:var(--accent2);
+  }
+  footer{
+    text-align:center;color:var(--muted);font-size:13px;margin-top:25px;
+  }
+
+  .closed-circuit{
+    height:220px;
+    position:relative;
+  }
+  .circuit-svg{
+    width:100%;
+    height:190px;
+    display:block;
+  }
+  .cwire{
+    fill:none;
+    stroke:#374151;
+    stroke-width:6;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .probe{
+    fill:#9ca3af;
+    stroke:#4b5563;
+    stroke-width:3;
+  }
+  .probe-label{
+    font:700 16px Arial, Helvetica, sans-serif;
+    fill:#1f2937;
+  }
+  .bulb{
+    fill:#e7e7e7;
+    stroke:#4b5563;
+    stroke-width:5;
+    transition:.25s;
+  }
+  .bulb.on{
+    fill:#fff3a6;
+    filter:drop-shadow(0 0 12px #ffd84d);
+  }
+  .filament{
+    fill:none;
+    stroke:#5b6470;
+    stroke-width:4;
+    stroke-linecap:round;
+  }
+  .battery-plate-long{
+    stroke:#374151;
+    stroke-width:7;
+    stroke-linecap:round;
+  }
+  .battery-plate-short{
+    stroke:#374151;
+    stroke-width:5;
+    stroke-linecap:round;
+  }
+
+
+  /* Neu aufgebaute, fachlich saubere Schaltskizze */
+  .closed-circuit{
+    height:250px;
+    position:relative;
+  }
+  .circuit-svg{
+    display:block;
+    width:100%;
+    height:215px;
+  }
+  .cwire{
+    fill:none;
+    stroke:#20252b;
+    stroke-width:6;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .cell-long{
+    stroke:#20252b;
+    stroke-width:7;
+    stroke-linecap:round;
+  }
+  .cell-short{
+    stroke:#20252b;
+    stroke-width:7;
+    stroke-linecap:round;
+  }
+  .bulb{
+    fill:#f4f4f4;
+    stroke:#20252b;
+    stroke-width:5;
+    transition:fill .25s, filter .25s;
+  }
+  .bulb.on{
+    fill:#fff2a8;
+    filter:drop-shadow(0 0 12px #ffd84d);
+  }
+  .filament{
+    fill:none;
+    stroke:#20252b;
+    stroke-width:4;
+    stroke-linecap:round;
+  }
+  .probe{
+    fill:#b7bec5;
+    stroke:#20252b;
+    stroke-width:4;
+  }
+  .probe-label{
+    font:700 16px Arial, Helvetica, sans-serif;
+    fill:#20252b;
+    pointer-events:none;
+  }
+  .terminal{
+    fill:#20252b;
+  }
+
+
+
+  /* Fachlich klare Darstellung eines vereinfachten Biegeversuchs */
+  .bend-stage{
+    min-height:300px;
+  }
+  .bend-svg{
+    width:100%;
+    height:260px;
+    display:block;
+  }
+  .press-head{
+    transition:transform .55s cubic-bezier(.2,.8,.25,1);
+  }
+  .press-head.down{
+    transform:translateY(55px);
+  }
+  .press-block{
+    fill:#66737f;
+    stroke:#303840;
+    stroke-width:3;
+  }
+  .press-shaft{
+    stroke:#303840;
+    stroke-width:8;
+    stroke-linecap:round;
+  }
+  .force-arrow{
+    fill:none;
+    stroke:#303840;
+    stroke-width:6;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .support{
+    fill:#8d99a4;
+    stroke:#303840;
+    stroke-width:3;
+  }
+  .support-base{
+    fill:none;
+    stroke:#303840;
+    stroke-width:5;
+    stroke-linecap:round;
+  }
+  .bend-sample{
+    fill:none;
+    stroke:#9aa3aa;
+    stroke-width:22;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    transition:d .7s cubic-bezier(.2,.75,.25,1), stroke .25s;
+  }
+  .bend-sample.kupfer{stroke:#b87333;}
+  .bend-sample.aluminium{stroke:#b9c1c8;}
+  .bend-sample.eisen{stroke:#70777d;}
+  .bend-sample.kunststoff{stroke:#d59a5c;}
+  .bend-sample.glas{stroke:#9fd7e5;}
+
+  .broken-sample{
+    opacity:1;
+    transition:opacity .15s;
+  }
+  .hidden{
+    display:none;
+  }
+  .crack{
+    fill:none;
+    stroke:#303840;
+    stroke-width:4;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .bend-label{
+    font:700 18px Arial, Helvetica, sans-serif;
+    fill:#475569;
+  }
+
+
+  /* Animierter Schalter im Stromkreis */
+  .switch-contact{
+    fill:#f7f7f7;
+    stroke:#303840;
+    stroke-width:3;
+  }
+  .switch-blade{
+    stroke:#303840;
+    stroke-width:6;
+    stroke-linecap:round;
+    transform-origin:125px 65px;
+    transition:transform .45s ease;
+  }
+  #switchGroup.closed .switch-blade{
+    transform:rotate(32deg);
+  }
+
+
+  /* Bleistiftmine / Graphitgemisch */
+  .sample.bleistiftmine{
+    background:linear-gradient(135deg,#1f252a,#3e454b,#22282d);
+    border-color:#151a1e;
+  }
+  .sample.bleistiftmine.shiny{
+    background:linear-gradient(120deg,#171b1f 0%,#3b4248 28%,#a8b0b5 45%,#343b41 58%,#6d757b 72%,#171b1f 100%);
+    box-shadow:0 0 14px rgba(220,230,235,.38);
+  }
+
+  /* Leitfähige Bleistiftmine: Lampe glimmt schwächer als bei Metallen */
+  .bulb.dim{
+    fill:#fff3b0;
+    filter:drop-shadow(0 0 5px rgba(255,220,90,.65));
+  }
+  .bulb.dim + .filament{
+    stroke:#ffb703;
+  }
+
+  .bend-sample.bleistiftmine{stroke:#343b40;}
+
+  /* Magnetismus */
+  .mag-stage{
+    min-height:360px;
+    overflow:hidden;
+  }
+  .mag-svg{
+    width:100%;
+    height:330px;
+    display:block;
+  }
+  .magnet-group{
+    transition:transform .8s cubic-bezier(.2,.8,.2,1);
+  }
+  .magnet-group.near{
+    transform:translateX(150px);
+  }
+  .magnet-n{fill:#d94b4b;}
+  .magnet-s{fill:#4777c8;}
+  .magnet-outline{
+    fill:none;
+    stroke:#26323d;
+    stroke-width:4;
+  }
+  .magnet-letter{
+    font:700 22px Arial, Helvetica, sans-serif;
+    fill:white;
+  }
+  }
+  .mag-string{
+    stroke:#59636d;
+    stroke-width:3;
+  }
+  .mag-sample{
+    fill:#9aa3aa;
+    stroke:#303840;
+    stroke-width:3;
+    transition:transform .75s cubic-bezier(.2,.8,.25,1), fill .25s;
+    transform-origin:470px 93px;
+  }
+  .mag-sample.iron{fill:#747b80;}
+  .mag-sample.copper{fill:#b87333;}
+  .mag-sample.aluminium{fill:#bcc3c8;}
+  .mag-sample.wood{fill:#9b704a;}
+  .mag-sample.plastic{fill:#b5bac0;}
+  .mag-sample.glass{fill:#a9d8e5;}
+  .mag-sample.graphite{fill:#343b40;}
+  .mag-sample.attracted{
+    transform:rotate(-24deg) translate(-12px, 4px);
+  }
+  .mag-label{
+    font:700 18px Arial, Helvetica, sans-serif;
+    fill:#475569;
+  }
+  .mag-base{
+    fill:none;
+    stroke:#6b7280;
+    stroke-width:5;
+    stroke-linecap:round;
+  }
+
+
+.sample.nickel{background:linear-gradient(135deg,#8e969c,#c4c9cd,#747c82);border-color:#596168}
+.sample.nickel.shiny{background:linear-gradient(120deg,#737b81,#f4f6f7 30%,#aab1b6 48%,#fff 64%,#788086);box-shadow:0 0 22px rgba(255,255,255,.75)}
+.bend-sample.nickel{stroke:#8b9399}
+
+.density-svg,.hard-svg{width:100%;height:315px;display:block}
+.density-block,.hard-sample{stroke:#303840;stroke-width:3}
+.density-pan{fill:#d7dde2;stroke:#4b5563;stroke-width:3}
+.density-line{stroke:#4b5563;stroke-width:4;stroke-linecap:round}
+.density-display{font:700 22px Arial,sans-serif;fill:#1f2937}
+.density-small,.hard-label{font:600 17px Arial,sans-serif;fill:#64748b}
+.density-drop{transition:transform .55s ease}
+.density-drop.weigh{transform:translateY(25px)}
+.scratch-tool{transition:transform 1s ease}
+.scratch-tool.run{transform:translateX(260px)}
+.scratch-line{fill:none;stroke:#303840;stroke-width:5;stroke-linecap:round;stroke-dasharray:270;stroke-dashoffset:270}
+.scratch-line.visible{animation:scratchDraw 1s .15s linear forwards}
+@keyframes scratchDraw{to{stroke-dashoffset:0}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Metalle untersuchen</h1>
+  <p>Vier einfache Simulationen zu typischen Stoffeigenschaften</p>
+</header>
+
+<main>
+  <section class="intro">
+    <strong>Arbeitsauftrag:</strong>
+    Führen Sie die Simulationen nacheinander durch. Notieren Sie jeweils Ihre Beobachtung
+    und formulieren Sie anschließend eine Aussage über die untersuchte Stoffeigenschaft.
+  </section>
+
+  <section class="sim">
+    <h2>1. Glanz</h2>
+    <div class="row">
+      <div class="controls">
+        <label for="glossMaterial">Material auswählen</label>
+        <select id="glossMaterial" onchange="resetGloss()">
+          <option value="kupfer">Kupfer</option>
+          <option value="aluminium">Aluminium</option>
+          <option value="eisen">Eisen</option>
+          <option value="nickel">Nickel</option>
+          <option value="holz">Holz</option>
+          <option value="kunststoff">Kunststoff</option>
+          <option value="glas">Glas</option>
+          <option value="bleistiftmine">Bleistiftmine</option>
+        </select>
+
+        <button onclick="polish()">Oberfläche polieren</button>
+        <button class="secondary" onclick="resetGloss()">Zurücksetzen</button>
+        <div id="glossResult" style="display:none"></div>
+      </div>
+
+      <div class="stage">
+        <div id="sample" class="sample kupfer"></div>
+        <div id="glossCaption" class="caption">Kupfer</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sim">
+    <h2>2. Elektrische Leitfähigkeit</h2>
+    <div class="row">
+      <div class="controls">
+        <label for="elecMaterial">Material auswählen</label>
+        <select id="elecMaterial" onchange="resetElectricity()">
+          <option value="kupfer">Kupfer</option>
+          <option value="aluminium">Aluminium</option>
+          <option value="eisen">Eisen</option>
+          <option value="nickel">Nickel</option>
+          <option value="holz">Holz</option>
+          <option value="kunststoff">Kunststoff</option>
+          <option value="glas">Glas</option>
+          <option value="bleistiftmine">Bleistiftmine</option>
+        </select>
+        <button onclick="testElectricity()">Stromkreis schließen</button>
+        <div id="elecResult" style="display:none"></div>
+      </div>
+      <div class="stage">
+        <div class="circuit closed-circuit">
+          <svg class="circuit-svg" viewBox="0 0 640 240"
+               aria-label="Schaltskizze eines Stromkreises mit einer Zelle, Lampe und Materialprobe">
+
+            <!--
+              Geschlossener Stromkreis.
+              Oben ist die Leitung am Zellensymbol unterbrochen:
+              langer Strich = eine Elektrode, kurzer Strich = zweite Elektrode.
+              Zwischen beiden Platten verläuft KEINE Leitung.
+            -->
+
+            <!-- linke Leitung und obere Leitung bis zur Zelle -->
+            <path d="M90 65 H125" class="cwire"/>
+            <path d="M175 65 H285" class="cwire"/>
+
+            <!-- Schalter: offen im Ausgangszustand -->
+            <g id="switchGroup">
+              <circle cx="125" cy="65" r="6" class="switch-contact"/>
+              <circle cx="175" cy="65" r="6" class="switch-contact"/>
+              <line id="switchBlade" x1="125" y1="65" x2="166" y2="39" class="switch-blade"/>
+            </g>
+
+            <!-- Zellenschaltzeichen: langer und kurzer senkrechter Strich -->
+            <line x1="285" y1="30" x2="285" y2="100" class="cell-long"/>
+            <line x1="320" y1="43" x2="320" y2="87" class="cell-short"/>
+
+            <!-- obere Leitung ab der Zelle und rechte Leitung -->
+            <path d="M320 65 H545 V105" class="cwire"/>
+
+            <!-- Lampe als Schaltzeichen -->
+            <path d="M545 105 V112" class="cwire"/>
+            <circle id="svgLamp" cx="545" cy="145" r="33" class="bulb"/>
+            <path d="M522 122 L568 168 M568 122 L522 168" class="filament"/>
+            <path d="M545 178 V205 H420" class="cwire"/>
+
+            <!-- Materialprobe liegt in Reihe im Stromkreis -->
+            <path d="M90 65 V205 H220" class="cwire"/>
+            <rect id="svgTestpiece" x="220" y="187" width="200" height="36" rx="6" class="probe"/>
+            <text id="svgTestLabel" x="320" y="211" text-anchor="middle" class="probe-label">Probe</text>
+
+            <!-- Anschlussmarkierungen der Probe -->
+            <circle cx="220" cy="205" r="5" class="terminal"/>
+            <circle cx="420" cy="205" r="5" class="terminal"/>
+          </svg>
+          <div class="caption">Zelle – Schalter – Lampe – Materialprobe</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sim">
+    <h2>3. Wärmeleitfähigkeit</h2>
+    <div class="row">
+      <div class="controls">
+        <label for="heatMaterial">Material auswählen</label>
+        <select id="heatMaterial">
+          <option value="kupfer">Kupfer</option>
+          <option value="aluminium">Aluminium</option>
+          <option value="eisen">Eisen</option>
+          <option value="nickel">Nickel</option>
+          <option value="holz">Holz</option>
+          <option value="kunststoff">Kunststoff</option>
+          <option value="glas">Glas</option>
+          <option value="bleistiftmine">Bleistiftmine</option>
+        </select>
+        <button onclick="heatTest()">Messung starten</button>
+        <button class="secondary" onclick="resetHeat()">Zurücksetzen</button>
+        <div id="timer" class="timer">0,0 s</div>
+        <div id="heatResult" class="result">Beobachtung: …</div>
+        <div class="note">
+          Gemessen wird die Zeit, bis am rechten Ende der Probe eine festgelegte Temperatur erreicht wird. So lassen sich die Materialien miteinander vergleichen.
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="bar">
+          <div class="heat">🔥</div>
+          <div class="thermo">🌡️</div>
+          <div id="heatfront" class="heatfront"></div>
+        </div>
+        <div class="caption" style="margin-top:18px">
+          Links wird erwärmt – wann erreicht die Wärme das andere Ende?
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th>gemessene Zeit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Kupfer</td><td id="t-kupfer">–</td></tr>
+          <tr><td>Aluminium</td><td id="t-aluminium">–</td></tr>
+          <tr><td>Eisen</td><td id="t-eisen">–</td></tr>
+          <tr><td>Nickel</td><td id="t-nickel">–</td></tr>
+          <tr><td>Holz</td><td id="t-holz">–</td></tr>
+          <tr><td>Kunststoff</td><td id="t-kunststoff">–</td></tr>
+          <tr><td>Glas</td><td id="t-glas">–</td></tr>
+          <tr><td>Bleistiftmine</td><td id="t-bleistiftmine">–</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sim">
+    <h2>4. Verformbarkeit</h2>
+    <div class="row">
+      <div class="controls">
+        <label for="shapeMaterial">Material auswählen</label>
+        <select id="shapeMaterial" onchange="resetBendTest()">
+          <option value="kupfer">Kupfer</option>
+          <option value="aluminium">Aluminium</option>
+          <option value="eisen">Eisen</option>
+          <option value="nickel">Nickel</option>
+          <option value="holz">Holz</option>
+          <option value="kunststoff">Kunststoff</option>
+          <option value="glas">Glas</option>
+          <option value="bleistiftmine">Bleistiftmine</option>
+        </select>
+        <button onclick="runBendTest()">Kraft ausüben</button>
+        <button class="secondary" onclick="resetBendTest()">Zurücksetzen</button>
+      </div>
+
+      <div class="stage bend-stage">
+        <svg id="bendSvg" class="bend-svg" viewBox="0 0 620 280"
+             aria-label="Vereinfachter Biegeversuch mit zwei Auflagen und einer Kraft in der Mitte">
+
+          <!-- Kraftstempel -->
+          <g id="pressHead" class="press-head">
+            <rect x="275" y="25" width="70" height="42" rx="7" class="press-block"/>
+            <path d="M310 67 V95" class="press-shaft"/>
+            <path d="M296 87 L310 102 L324 87" class="force-arrow"/>
+          </g>
+
+          <!-- zwei feste Auflagen -->
+          <g class="supports">
+            <polygon points="115,205 155,205 135,168" class="support"/>
+            <polygon points="465,205 505,205 485,168" class="support"/>
+            <path d="M95 207 H175 M445 207 H525" class="support-base"/>
+          </g>
+
+          <!-- durchgehende Probe; d wird per JavaScript verändert -->
+          <path id="bendSample"
+                d="M135 165 Q310 165 485 165"
+                class="bend-sample"/>
+
+          <!-- Bruchdarstellung, standardmäßig verborgen -->
+          <g id="brokenSample" class="broken-sample hidden">
+            <path id="brokenLeft"
+                  d="M135 165 Q225 170 293 190"
+                  class="bend-sample"/>
+            <path id="brokenRight"
+                  d="M327 190 Q395 170 485 165"
+                  class="bend-sample"/>
+            <path d="M294 178 L305 191 L297 201 L310 214"
+                  class="crack"/>
+            <path d="M326 178 L315 191 L323 201 L310 214"
+                  class="crack"/>
+          </g>
+
+          <text id="bendLabel" x="310" y="245" text-anchor="middle" class="bend-label">Kupfer</text>
+        </svg>
+
+        <div class="caption">Vereinfachter Biegeversuch: gleiche Probenform, Kraft wirkt in der Mitte.</div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="sim">
+    <h2>5. Magnetische Eigenschaften</h2>
+    <div class="row">
+      <div class="controls">
+        <label for="magMaterial">Material auswählen</label>
+        <select id="magMaterial" onchange="resetMagnetTest()">
+          <option value="kupfer">Kupfer</option>
+          <option value="aluminium">Aluminium</option>
+          <option value="eisen">Eisen</option>
+          <option value="nickel">Nickel</option>
+          <option value="holz">Holz</option>
+          <option value="kunststoff">Kunststoff</option>
+          <option value="glas">Glas</option>
+          <option value="bleistiftmine">Bleistiftmine</option>
+        </select>
+        <button onclick="runMagnetTest()">Magnet annähern</button>
+        <button class="secondary" onclick="resetMagnetTest()">Zurücksetzen</button>
+      </div>
+
+      <div id="magStage" class="stage mag-stage">
+        <svg class="mag-svg" viewBox="0 0 640 330"
+             aria-label="Magnet wird an eine frei aufgehängte Materialprobe angenähert">
+
+          <!-- Hufeisen-/Blockmagnet -->
+          <g id="magnetGroup" class="magnet-group">
+            <rect x="55" y="100" width="80" height="120" rx="14" class="magnet-n"/>
+            <rect x="135" y="100" width="80" height="120" rx="14" class="magnet-s"/>
+            <rect x="55" y="100" width="160" height="120" rx="14" class="magnet-outline"/>
+            <line x1="135" y1="100" x2="135" y2="220" class="magnet-outline"/>
+            <text x="95" y="168" text-anchor="middle" class="magnet-letter">N</text>
+            <text x="175" y="168" text-anchor="middle" class="magnet-letter">S</text>
+          </g>
+
+          <!-- Aufhängung und Probe -->
+          <path d="M470 45 V93" class="mag-string"/>
+          <circle cx="470" cy="42" r="7" fill="#59636d"/>
+          <g id="magSampleGroup" class="mag-sample">
+            <rect id="magSample" x="440" y="93" width="60" height="120" rx="8"/>
+          </g>
+
+          <path d="M420 250 H520" class="mag-base"/>
+          <text id="magLabel" x="470" y="285" text-anchor="middle" class="mag-label">Kupfer</text>
+        </svg>
+        <div class="caption">Die Probe hängt frei. Beobachten Sie, ob sie sich beim Annähern des Magneten bewegt.</div>
+      </div>
+    </div>
+  </section>
+
+
+
+  
+<section class="sim">
+<h2>6. Dichte</h2>
+<div class="row">
+<div class="controls">
+<label for="densityMaterial">Material auswählen</label>
+<select id="densityMaterial" onchange="resetDensityTest()">
+          <option value="kupfer">Kupfer</option>
+          <option value="aluminium">Aluminium</option>
+          <option value="eisen">Eisen</option>
+          <option value="nickel">Nickel</option>
+          <option value="holz">Holz</option>
+          <option value="kunststoff">Kunststoff</option>
+          <option value="glas">Glas</option>
+          <option value="bleistiftmine">Bleistiftmine</option>
+        </select>
+<button onclick="runDensityTest()">Probe wiegen</button>
+<button class="secondary" onclick="resetDensityTest()">Zurücksetzen</button>
+</div>
+<div class="stage">
+<svg class="density-svg" viewBox="0 0 640 330">
+<text x="320" y="32" text-anchor="middle" class="density-small">Alle Proben haben das gleiche Volumen: 10 cm³</text>
+<g id="densityBlockGroup" class="density-drop"><rect id="densityBlock" x="270" y="70" width="100" height="70" rx="9" class="density-block"/></g>
+<path d="M220 205 H420" class="density-line"/><path d="M250 205 L275 150 M390 205 L365 150" class="density-line"/>
+<rect x="250" y="205" width="140" height="72" rx="12" class="density-pan"/>
+<rect x="274" y="222" width="92" height="38" rx="6" fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+<text id="densityMass" x="320" y="249" text-anchor="middle" class="density-display">– g</text>
+<text id="densityLabel" x="320" y="307" text-anchor="middle" class="density-small">Kupfer</text>
+</svg>
+<div class="caption">Vergleichen Sie gleich große Proben. Bestimmen Sie aus Masse und Volumen die Dichte.</div>
+</div></div></section>
+
+
+<section class="sim">
+<h2>7. Härte – Ritzversuch</h2>
+<div class="row">
+<div class="controls">
+<label for="hardMaterial">Material auswählen</label>
+<select id="hardMaterial" onchange="resetHardnessTest()">
+          <option value="kupfer">Kupfer</option>
+          <option value="aluminium">Aluminium</option>
+          <option value="eisen">Eisen</option>
+          <option value="nickel">Nickel</option>
+          <option value="holz">Holz</option>
+          <option value="kunststoff">Kunststoff</option>
+          <option value="glas">Glas</option>
+          <option value="bleistiftmine">Bleistiftmine</option>
+        </select>
+<button onclick="runHardnessTest()">Ritzversuch starten</button>
+<button class="secondary" onclick="resetHardnessTest()">Zurücksetzen</button>
+</div>
+<div class="stage">
+<svg class="hard-svg" viewBox="0 0 640 315">
+<text x="320" y="32" text-anchor="middle" class="density-small">Gleiche Prüfspitze – gleiche Kraft</text>
+<rect id="hardSample" x="120" y="175" width="400" height="78" rx="10" class="hard-sample"/>
+<path id="scratchLine" d="M180 206 H450" class="scratch-line"/>
+<g id="scratchTool" class="scratch-tool"><rect x="145" y="70" width="34" height="92" rx="8" fill="#68737d" stroke="#303840" stroke-width="3"/><path d="M162 162 L148 191 L176 191 Z" fill="#3d464e" stroke="#303840" stroke-width="2"/></g>
+<text id="hardLabel" x="320" y="290" text-anchor="middle" class="hard-label">Kupfer</text>
+</svg>
+<div class="caption">Beobachten Sie, ob unter gleichen Bedingungen eine sichtbare Ritzspur entsteht.</div>
+</div></div></section>
+
+<footer>
+    Vereinfachte Unterrichtssimulation – die Zeiten dienen dem Vergleich und sind keine Messwerte der Wärmeleitfähigkeit. Die Bleistiftmine wird als Graphit-Ton-/Bindemittel-Gemisch modelliert; reale Werte können je nach Härtegrad variieren.
+  </footer>
+</main>
+
+<script>
+let heatInterval = null;
+
+function setGlossMaterial(){
+  const material = document.getElementById("glossMaterial").value;
+  const sample = document.getElementById("sample");
+  const caption = document.getElementById("glossCaption");
+
+  const names = {
+    kupfer: "Kupfer",
+    aluminium: "Aluminium",
+    eisen: "Eisen",
+    nickel: "Nickel",
+    holz: "Holz",
+    kunststoff: "Kunststoff",
+    glas: "Glas",
+    bleistiftmine: "Bleistiftmine"
+  };
+
+  sample.className = "sample " + material;
+  caption.textContent = names[material];
+}
+
+function polish(){
+  setGlossMaterial();
+  document.getElementById("sample").classList.add("shiny");
+}
+
+function resetGloss(){
+  setGlossMaterial();
+}
+
+function resetElectricity(){
+  const lamp = document.getElementById("svgLamp");
+  const switchGroup = document.getElementById("switchGroup");
+  const label = document.getElementById("svgTestLabel");
+  const m = document.getElementById("elecMaterial").value;
+
+  switchGroup.classList.remove("closed");
+  lamp.classList.remove("on", "dim");
+  label.textContent = m.charAt(0).toUpperCase() + m.slice(1);
+}
+
+function testElectricity(){
+  const m = document.getElementById("elecMaterial").value;
+  const metals = ["kupfer","eisen","aluminium","nickel"];
+  const lamp = document.getElementById("svgLamp");
+  const switchGroup = document.getElementById("switchGroup");
+  const label = document.getElementById("svgTestLabel");
+
+  // Immer erst aus dem offenen Zustand starten.
+  switchGroup.classList.remove("closed");
+  lamp.classList.remove("on", "dim");
+  label.textContent = m.charAt(0).toUpperCase() + m.slice(1);
+
+  // Kurzer Neuaufbau, damit die Schließbewegung sichtbar abgespielt wird.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      switchGroup.classList.add("closed");
+
+      // Erst NACH dem sichtbaren Schließen reagiert die Lampe.
+      setTimeout(() => {
+        lamp.classList.remove("on", "dim");
+        if(metals.includes(m)){
+          lamp.classList.add("on");
+        } else if(m === "bleistiftmine"){
+          lamp.classList.add("dim");
+        }
+      }, 450);
+    });
+  });
+}
+
+const heatTimes = {
+  kupfer: 3.0,
+  aluminium: 5.0,
+  eisen: 12.0,
+  nickel: 11.0,
+  bleistiftmine: 20.0,
+  holz: 30.0,
+  kunststoff: 30.0,
+  glas: 30.0
+};
+
+const abortAfter = {
+  holz: true,
+  kunststoff: true,
+  glas: true
+};
+
+function heatTest(){
+  if(heatInterval) clearInterval(heatInterval);
+
+  const m = document.getElementById("heatMaterial").value;
+  const target = heatTimes[m];
+  const front = document.getElementById("heatfront");
+  const timer = document.getElementById("timer");
+  const result = document.getElementById("heatResult");
+
+  front.style.transition = "none";
+  front.style.width = "0%";
+  void front.offsetWidth;
+
+  result.textContent = "Messung läuft …";
+  timer.textContent = "0,0 s";
+
+  const realDuration = target * 220;
+  const targetWidth = abortAfter[m] ? 35 : 100;
+  front.style.transition = `width ${realDuration}ms linear`;
+  front.style.width = targetWidth + "%";
+
+  const start = performance.now();
+
+  heatInterval = setInterval(() => {
+    const elapsedReal = performance.now() - start;
+    const simulated = Math.min(target, elapsedReal / 220);
+    timer.textContent = simulated.toFixed(1).replace(".", ",") + " s";
+
+    if(simulated >= target){
+      clearInterval(heatInterval);
+      heatInterval = null;
+      timer.textContent = target.toFixed(1).replace(".", ",") + " s";
+
+      if(abortAfter[m]){
+        result.textContent = "Messung nach 30 s beendet – die Messstelle wurde noch nicht ausreichend erwärmt.";
+        document.getElementById("t-" + m).textContent = "> 30 s";
+      } else {
+        result.textContent = "Messung beendet. Notieren Sie die Zeit.";
+        document.getElementById("t-" + m).textContent =
+          target.toFixed(1).replace(".", ",") + " s";
+      }
+    }
+  }, 50);
+}
+
+function resetHeat(){
+  if(heatInterval) clearInterval(heatInterval);
+  heatInterval = null;
+  const front = document.getElementById("heatfront");
+  front.style.transition = "none";
+  front.style.width = "0%";
+  document.getElementById("timer").textContent = "0,0 s";
+  document.getElementById("heatResult").textContent = "Beobachtung: …";
+}
+
+
+function setBendMaterialAppearance(material){
+  const sample = document.getElementById("bendSample");
+  const left = document.getElementById("brokenLeft");
+  const right = document.getElementById("brokenRight");
+  const label = document.getElementById("bendLabel");
+
+  const names = {
+    kupfer: "Kupfer",
+    aluminium: "Aluminium",
+    eisen: "Eisen",
+    kunststoff: "Kunststoff",
+    glas: "Glas",
+    bleistiftmine: "Bleistiftmine"
+  };
+
+  sample.setAttribute("class", "bend-sample " + material);
+  left.setAttribute("class", "bend-sample " + material);
+  right.setAttribute("class", "bend-sample " + material);
+  label.textContent = names[material];
+}
+
+function resetBendTest(){
+  const material = document.getElementById("shapeMaterial").value;
+  const sample = document.getElementById("bendSample");
+  const broken = document.getElementById("brokenSample");
+  const press = document.getElementById("pressHead");
+
+  setBendMaterialAppearance(material);
+
+  sample.style.display = "";
+  sample.setAttribute("d", "M135 165 Q310 165 485 165");
+  broken.classList.add("hidden");
+  press.classList.remove("down");
+}
+
+function runBendTest(){
+  const material = document.getElementById("shapeMaterial").value;
+  const sample = document.getElementById("bendSample");
+  const broken = document.getElementById("brokenSample");
+  const press = document.getElementById("pressHead");
+
+  resetBendTest();
+
+  // Browser kurz Gelegenheit geben, den Ausgangszustand zu zeichnen.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      press.classList.add("down");
+
+      if(material === "glas" || material === "bleistiftmine" || material === "holz"){
+        // Glas zeigt zunächst kaum sichtbare Biegung und bricht dann.
+        sample.setAttribute("d", "M135 165 Q310 174 485 165");
+
+        setTimeout(() => {
+          sample.style.display = "none";
+          broken.classList.remove("hidden");
+        }, 520);
+      } else {
+        // Glatte Biegekurve statt Verzerrung oder Knick.
+        const bendDepth = {
+          kupfer: 72,
+          aluminium: 66,
+          eisen: 48,
+          nickel: 52,
+          kunststoff: 78
+        }[material];
+
+        sample.setAttribute(
+          "d",
+          `M135 165 Q310 ${165 + bendDepth} 485 165`
+        );
+      }
+    });
+  });
+}
+
+resetBendTest();
+
+
+function setMagMaterialAppearance(){
+  const material = document.getElementById("magMaterial").value;
+  const sampleGroup = document.getElementById("magSampleGroup");
+  const label = document.getElementById("magLabel");
+
+  const names = {
+    kupfer: "Kupfer",
+    aluminium: "Aluminium",
+    eisen: "Eisen",
+    nickel: "Nickel",
+    holz: "Holz",
+    kunststoff: "Kunststoff",
+    glas: "Glas",
+    bleistiftmine: "Bleistiftmine"
+  };
+
+  const classes = {
+    kupfer: "copper",
+    aluminium: "aluminium",
+    eisen: "iron",
+    nickel: "iron",
+    holz: "wood",
+    kunststoff: "plastic",
+    glas: "glass",
+    bleistiftmine: "graphite"
+  };
+
+  sampleGroup.setAttribute("class", "mag-sample " + classes[material]);
+  label.textContent = names[material];
+}
+
+function resetMagnetTest(){
+  const magnet = document.getElementById("magnetGroup");
+  const sampleGroup = document.getElementById("magSampleGroup");
+  const stage = document.getElementById("magStage");
+
+  magnet.classList.remove("near");
+  sampleGroup.classList.remove("attracted");
+  setMagMaterialAppearance();
+}
+
+function runMagnetTest(){
+  const material = document.getElementById("magMaterial").value;
+  const magnet = document.getElementById("magnetGroup");
+  const sampleGroup = document.getElementById("magSampleGroup");
+  const stage = document.getElementById("magStage");
+
+  resetMagnetTest();
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      magnet.classList.add("near");
+
+      setTimeout(() => {
+        if(material === "eisen" || material === "nickel"){
+          sampleGroup.classList.add("attracted");
+        }
+      }, 620);
+    });
+  });
+}
+
+resetMagnetTest();
+
+const densityData={
+kupfer:{rho:8.96,n:"Kupfer",c:"#b87333"},aluminium:{rho:2.70,n:"Aluminium",c:"#bcc3c8"},
+eisen:{rho:7.87,n:"Eisen",c:"#747b80"},nickel:{rho:8.90,n:"Nickel",c:"#929aa0"},
+holz:{rho:0.60,n:"Holz",c:"#9b704a"},kunststoff:{rho:1.20,n:"Kunststoff",c:"#b5bac0"},
+glas:{rho:2.50,n:"Glas",c:"#a9d8e5"},bleistiftmine:{rho:2.20,n:"Bleistiftmine",c:"#343b40"}};
+function resetDensityTest(){const m=densityMaterial.value,d=densityData[m];densityBlock.setAttribute("fill",d.c);densityLabel.textContent=d.n;densityMass.textContent="– g";densityBlockGroup.classList.remove("weigh")}
+function runDensityTest(){resetDensityTest();void densityBlockGroup.getBoundingClientRect();densityBlockGroup.classList.add("weigh");setTimeout(()=>{const d=densityData[densityMaterial.value];densityMass.textContent=(d.rho*10).toFixed(1).replace(".",",")+" g"},500)}
+
+const hardnessData={
+kupfer:{n:"Kupfer",c:"#b87333",r:1},aluminium:{n:"Aluminium",c:"#bcc3c8",r:1},
+eisen:{n:"Eisen",c:"#747b80",r:0},nickel:{n:"Nickel",c:"#929aa0",r:0},
+holz:{n:"Holz",c:"#9b704a",r:1},kunststoff:{n:"Kunststoff",c:"#b5bac0",r:1},
+glas:{n:"Glas",c:"#a9d8e5",r:0},bleistiftmine:{n:"Bleistiftmine",c:"#343b40",r:1}};
+function resetHardnessTest(){const d=hardnessData[hardMaterial.value];hardSample.setAttribute("fill",d.c);hardLabel.textContent=d.n;scratchTool.classList.remove("run");scratchLine.classList.remove("visible")}
+function runHardnessTest(){resetHardnessTest();void scratchTool.getBoundingClientRect();scratchTool.classList.add("run");if(hardnessData[hardMaterial.value].r)scratchLine.classList.add("visible")}
+resetDensityTest();resetHardnessTest();
+
+</script>
+</body>
+</html>
